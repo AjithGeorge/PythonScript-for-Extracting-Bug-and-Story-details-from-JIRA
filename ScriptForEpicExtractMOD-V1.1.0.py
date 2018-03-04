@@ -22,13 +22,13 @@ BugJQL = 'project = TEL AND issuetype in ("Automation Bug", Bug, Problem) AND st
 
 d = str(datetime.datetime.now().date())
 
-link = requests.get('https://koresystemsgroup.atlassian.net/rest/greenhopper/1.0/integration/teamcalendars/sprint/list?jql=project=TEL AND"Epic Link"='+ Epic +'', auth=('ageorge@korewireless.com', 'Welcome#123'))
+link = requests.get('https://xyz.atlassian.net/rest/greenhopper/1.0/integration/teamcalendars/sprint/list?jql=project=TEL AND"Epic Link"='+ Epic +'', auth=('ageorge@korewireless.com', 'Welcome#123'))
 sprintData=link.json()
 p=sprintData["sprints"][0]["start"]
 SprintStartDate='     '+p[:2] +'-'+p[2:4]+'-'+p[4:8]
 
 jira = Jira(
-    url='https://koresystemsgroup.atlassian.net/',
+    url='https://xyz.atlassian.net/',
     username='ageorge@korewireless.com',
     password='Welcome#123')
 
