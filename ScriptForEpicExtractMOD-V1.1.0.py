@@ -11,26 +11,26 @@ import os
 import datetime
 import requests
 
-Epic ='ID-####'
+Epic ='TEL-9870'
 
 BugDetails=True
 StoryDetails=True
 
-StoryJQL = 'project = ID AND issuetype = Story AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
-#BugJQL = 'project = ID AND issuetype in ("Automation Bug", Bug, Problem) AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
-BugJQL = 'project = ID AND issuetype in ("Automation Bug", Bug, Problem) AND status in ("Code Review", "Failed QA", "In Progress", "In Testing", "On Hold", "Ready for Merge", "Ready for QA", "To Do") AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
+StoryJQL = 'project = TEL AND issuetype = Story AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
+#BugJQL = 'project = TEL AND issuetype in ("Automation Bug", Bug, Problem) AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
+BugJQL = 'project = TEL AND issuetype in ("Automation Bug", Bug, Problem) AND status in ("Code Review", "Failed QA", "In Progress", "In Testing", "On Hold", "Ready for Merge", "Ready for QA", "To Do") AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
 
 d = str(datetime.datetime.now().date())
 
-link = requests.get('https://xyz.atlassian.net/rest/greenhopper/1.0/integration/teamcalendars/sprint/list?jql=project=ID AND"Epic Link"='+ Epic +'', auth=('username', 'password'))
+link = requests.get('https://xyz.atlassian.net/rest/greenhopper/1.0/integration/teamcalendars/sprint/list?jql=project=TEL AND"Epic Link"='+ Epic +'', auth=('username', 'password'))
 sprintData=link.json()
 p=sprintData["sprints"][0]["start"]
 SprintStartDate='     '+p[:2] +'-'+p[2:4]+'-'+p[4:8]
 
 jira = Jira(
     url='https://xyz.atlassian.net/',
-    username='#####',
-    password='#####')
+    username='####',
+    password='####')
 
 if StoryDetails == True:
 
