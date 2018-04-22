@@ -11,21 +11,31 @@ import os
 import datetime
 import requests
 
-Epic ='TEL-9870'
+Epic ='TEL-9870'   			# Fill in the Details of the Epic from which details are to be Extracted.
 
-BugDetails=True
-StoryDetails=True
+BugDetails=True    			# Put True for getting the BugDeails in the Report.
+StoryDetails=True			# Put True for getting the StoryDetails in the Report.
 
-StoryJQL = 'project = TEL AND issuetype = Story AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
-#BugJQL = 'project = TEL AND issuetype in ("Automation Bug", Bug, Problem) AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
+
+# JQL from JIRA for filtering the Stories for Report.
+
+StoryJQL = 'project = TEL AND issuetype = Story AND "Epic Link" = '+ Epic +' ORDER BY created DESC'  
+
+# JQL from JIRA for filtering the Bugs for Report.
+
 BugJQL = 'project = TEL AND issuetype in ("Automation Bug", Bug, Problem) AND status in ("Code Review", "Failed QA", "In Progress", "In Testing", "On Hold", "Ready for Merge", "Ready for QA", "To Do") AND "Epic Link" = '+ Epic +' ORDER BY created DESC'
 
-d = str(datetime.datetime.now().date())
+
+d = str(datetime.datetime.now().date()) #setting the time stamp for the report being generated.
+
+#Below 4 Lines of code are for obtaining the Project Start Date or the First Sprint start date.
 
 link = requests.get('https://xyz.atlassian.net/rest/greenhopper/1.0/integration/teamcalendars/sprint/list?jql=project=TEL AND"Epic Link"='+ Epic +'', auth=('username', 'password'))
 sprintData=link.json()
 p=sprintData["sprints"][0]["start"]
 SprintStartDate='     '+p[:2] +'-'+p[2:4]+'-'+p[4:8]
+
+
 
 jira = Jira(
     url='https://xyz.atlassian.net/',
@@ -34,14 +44,14 @@ jira = Jira(
 
 if StoryDetails == True:
 
-	data2 = jira.jql(StoryJQL)
-	decoded2 = json.dumps(data2)
+	JQLResponse = jira.jql(StoryJQL)
+	DecodedResponse = json.dumps(JQLResponse)
 	
-	jsonResponse2=json.loads(decoded2)
-	jsondata2 = jsonResponse2["issues"]
+	ResponseStream=json.loads(DecodedResponse)
+	JsonProperty = ResponseStream["issues"]
 	
-	Count2=jsonResponse2['total']
-	if Count2<=0:
+	StoryCount=ResponseStream['total']
+	if StoryCount<=0:
 		print("In Stories -NO Match Found for the given Filter ")
 	else:
 		issuelistArray=[]
@@ -52,8 +62,10 @@ if StoryDetails == True:
 		qaestimateArray=[]
 		statusArray=[]
 		testphaseArray=[]
+
+#Filling the Arrays with the details from the Json response.
 		
-		for item in jsondata2:
+		for item in JsonProperty:
 			issueid = item.get("key")
 			issuelistArray.append(issueid)
 			issuetype = item.get("fields").get("issuetype").get("name")
@@ -69,8 +81,10 @@ if StoryDetails == True:
 			if issuetype == 'Story':
 				qaestimate = item.get("fields").get("customfield_15401")
 				qaestimateArray.append(qaestimate)
+				
 		
-		
+#Converting the Arrays to Data Frame using Pandas DataFrame	
+	
 		df1= pandas.DataFrame(issuelistArray)
 		df2= pandas.DataFrame(issuetypeArray)
 		df3= pandas.DataFrame(priorityArray)
@@ -87,9 +101,11 @@ if StoryDetails == True:
 		df6.to_excel(writer, startcol = 5, startrow = 1,index = False,header = False)
 		df7.to_excel(writer, startcol = 6, startrow = 1,index = False,header = False)
 		
-		writer.save()
+		writer.save()  #Saving the Details on to a Temporary File.
 		
-		
+# Modifying and Manipulating the data in the Temporary File.
+
+	
 		xfile = openpyxl.load_workbook('Tempdata.xlsx')
 		sheet = xfile.get_sheet_by_name('Sheet1')
 		sheet['A1'] = 'Issue Key'
@@ -104,17 +120,22 @@ if StoryDetails == True:
 		df = pandas.read_excel('Tempdata.xlsx')
 		FORMAT = ['Issue Key', 'Original Estimate(Hrs)', 'Time Spent(Hrs)']
 		df_selected = df[FORMAT]
+		
 		df1 = df['Original Estimate(Hrs)']
-		df1= (df1.div(3600)).round(2)
+		df1= (df1.div(3600)).round(2)		#Converting DataFrame to Hours.
 		df2 = df['Time Spent(Hrs)']
-		df2= (df2.div(3600)).round(2)
-		df3=df2.subtract(df1)
+		df2= (df2.div(3600)).round(2)		#Converting DataFrame to Hours.
+		
+		df3=df2.subtract(df1)				#Obtaining the Deviation by finding the difference between Original and Actuals Estimates.
 		df3=DataFrame({'Deviation':df3})
 		df4=df['QA. Est(Hrs)']
 		df5=df['Status']
-		TE= df1.sum()
-		TA= df2.sum()
-		TD= df3.sum()
+		
+		TE= df1.sum()	#Total of Estimate
+		TA= df2.sum()	#Total of Actuals
+		TD= df3.sum()	#Total of Deviations
+		
+		
 		TE=DataFrame({'Total Estimated(Hrs)':TE},index=[0])
 		TA=DataFrame({'Total Actuals(Hrs)':TA},index=[0])
 		TD=DataFrame({'Total Deviation(Hrs)':TD})
@@ -125,6 +146,8 @@ if StoryDetails == True:
 		l=l+3
 		writer = pandas.ExcelWriter(Epic +' ('+ d +') '+'-StoryDetails.xlsx')
 		df_selected.to_excel(writer,'Sheet1',index = False)
+
+#Setting the rows and columns for the DataFrame to be displayed in the final report.
 		
 		df1.to_excel(writer, startcol = 1, startrow = 0,index = False)
 		df2.to_excel(writer, startcol = 2, startrow = 0,index = False)
@@ -137,23 +160,23 @@ if StoryDetails == True:
 		TS.to_excel(writer, startcol = 0, startrow = l,index = False,header = True)
 		SD.to_excel(writer, startcol = 4, startrow = l,index = False,header = True)
 		writer.save()
-		os.remove('Tempdata.xlsx')
+		os.remove('Tempdata.xlsx')			#Removing the Temporary file after generating the final report.
 else:
 	print("Story Details are Opted Out In Code")
 
 
-
+# Same Comments and explanations applicable for the code section below.
 	
 if BugDetails == True:
 	
-	data2 = jira.jql(BugJQL)
-	decoded2 = json.dumps(data2)
+	JQLResponse = jira.jql(BugJQL)
+	DecodedResponse = json.dumps(JQLResponse)
 	
-	jsonResponse2=json.loads(decoded2)
-	jsondata2 = jsonResponse2["issues"]
+	ResponseStream=json.loads(DecodedResponse)
+	JsonProperty = ResponseStream["issues"]
 	
-	Count2=jsonResponse2['total']
-	if Count2<=0:
+	StoryCount=ResponseStream['total']
+	if StoryCount<=0:
 		print("In Bugs -NO Match Found for the given Filter ")
 	else:
 		issuelistArray1=[]
@@ -166,7 +189,7 @@ if BugDetails == True:
 		outwardissueArray=[]
 		tempArray=[]
 		
-		for item in jsondata2:
+		for item in JsonProperty:
 		
 			issueid = item.get("key")
 			issuelistArray1.append(issueid)
